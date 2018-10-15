@@ -36,7 +36,7 @@ interface TaskQueue {
 
 **TODO**
 
-*  Realize an available service which makes use of the queue.
+*  Implement an available service which utilizes the queue.
 *  Optimize the performance.
 *  Optimize unit test.
 
