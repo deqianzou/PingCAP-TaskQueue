@@ -31,6 +31,20 @@ public abstract class AbstractTask implements Runnable {
 
     public abstract boolean equals(AbstractTask task);
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if(o == null)
+            return false;
+        if (o.getClass() == this.getClass()) {
+            AbstractTask that = (AbstractTask) o;
+            return this.getId() == that.getId();
+        }
+        else
+            return false;
+    }
+
     public enum States {
         RUNNING,
         FINISHED,
