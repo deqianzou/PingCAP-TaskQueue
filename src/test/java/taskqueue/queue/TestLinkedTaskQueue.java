@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.Assert;
 import taskqueue.task.AbstractTask;
 import taskqueue.task.TaskFactory;
+import taskqueue.task.TaskId;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -24,8 +25,6 @@ public class TestLinkedTaskQueue {
     final AtomicLong getSum = new AtomicLong(0) ;
 
     final int nTrials = 10, nPairs = 10;
-
-    private CyclicBarrier barrier = new CyclicBarrier(2 * nPairs + 1);
 
     @Test
     public void testShutDownAndReset() {
@@ -68,11 +67,10 @@ public class TestLinkedTaskQueue {
     public void testGet() {
         linkedTaskQueue.reset();
         Assert.assertTrue(linkedTaskQueue.get() == null);
-        AbstractTask task = TaskFactory.newTask("default", 10);
+        AbstractTask task = TaskFactory.newTask("default", new TaskId(10));
         linkedTaskQueue.add(task);
         AbstractTask res = linkedTaskQueue.get();
         Assert.assertTrue(res.equals(task));
-        Assert.assertTrue(res.getId() == 10);
         Assert.assertTrue(res.getState() == AbstractTask.States.RUNNING);
         linkedTaskQueue.shutdown();
         res = linkedTaskQueue.get();
@@ -101,10 +99,9 @@ public class TestLinkedTaskQueue {
     public void testThreadSecurity() {
         try {
             for (int i=0; i<nPairs; i++) {
-                pool.execute(new Producer());
-                pool.execute(new Consumer());
+                pool.execute(new Producer((LinkedTaskQueue) linkedTaskQueue));
+                pool.execute(new Consumer((LinkedTaskQueue) linkedTaskQueue));
             }
-            barrier.await();
             // barrier.await();
             Assert.assertTrue(addSum.get() == getSum.get());
         } catch (Exception e) {
@@ -123,23 +120,30 @@ public class TestLinkedTaskQueue {
 
     class Producer implements Runnable {
 
+        private LinkedTaskQueue linkedTaskQueue;
+
+        public Producer(LinkedTaskQueue linkedTaskQueue) {
+            this.linkedTaskQueue = linkedTaskQueue;
+        }
+
         public void run() {
 
             try {
                 int seed = (this.hashCode() ^ (int) System.nanoTime());
-                AbstractTask task = task = TaskFactory.newTask("default", seed);
+                AbstractTask task = TaskFactory.newTask("default", seed);
                 int sum = 0;
-                barrier.await();
 
                 for (int i = nTrials; i > 0; --i) {
-                    linkedTaskQueue.add(task);
+                    synchronized (linkedTaskQueue) {
+                        linkedTaskQueue.add(task);
+                        linkedTaskQueue.notifyAll();
+                    }
                     sum += seed;
                     seed = xorShift(seed);
                 }
 
                 addSum.getAndAdd(sum) ;
 
-                barrier.await();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -148,19 +152,28 @@ public class TestLinkedTaskQueue {
 
     class Consumer implements Runnable {
 
+        private LinkedTaskQueue linkedTaskQueue;
+
+        public Consumer(LinkedTaskQueue linkedTaskQueue) {
+            this.linkedTaskQueue = linkedTaskQueue;
+        }
+
         public void run() {
             try {
-                barrier.await() ;
-                long sum = 0;
+                int sum = 0;
 
                 for (int i = nTrials; i > 0; --i) {
-                    AbstractTask task = linkedTaskQueue.get();
-                    if (null != task)  sum += task.getId() ;
+                    AbstractTask task;
+                    synchronized (linkedTaskQueue) {
+                        if (linkedTaskQueue.size() == 0)
+                            linkedTaskQueue.wait();
+                        task = linkedTaskQueue.get();
+                        sum += Integer.parseInt(task.getId().getId());
+                    }
                 }
 
                 getSum.getAndAdd(sum) ;
 
-                barrier.await();
             } catch (Exception e) {
                 e.printStackTrace();
             }

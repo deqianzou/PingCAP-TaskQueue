@@ -2,7 +2,9 @@ package taskqueue.queue;
 
 import com.sun.istack.internal.NotNull;
 import taskqueue.task.AbstractTask;
+import taskqueue.task.TaskId;
 
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -24,6 +26,8 @@ public class LinkedTaskQueue implements Queue {
     private Node head;
     private Node tail;
 
+    private HashMap<TaskId, AbstractTask> runningTaskMap;
+
     public static Queue getInstance() {
         return queueHolder.linkedTaskQueue;
     }
@@ -35,6 +39,7 @@ public class LinkedTaskQueue implements Queue {
         tail = new Node(null);
         head.next = tail;
         tail.pre = head;
+        runningTaskMap = new HashMap<TaskId, AbstractTask>();
     }
 
     public boolean isEmpty() {
@@ -47,7 +52,7 @@ public class LinkedTaskQueue implements Queue {
         try {
             res = _add(task);
         } catch (AssertionError e) {
-            return res = Boolean.FALSE;
+            res = Boolean.FALSE;
         }
         return res;
     }
@@ -65,6 +70,11 @@ public class LinkedTaskQueue implements Queue {
                     try {
                         if (e.task.getState() == AbstractTask.States.RUNNABLE){
                             e.task.setState(AbstractTask.States.RUNNING);
+                            // runningTaskMap.put(e.task.getId(), e.task);
+                            e.pre.next = e.next;
+                            e.next.pre = e.pre;
+                            e.pre = null;
+                            e.next = null;
                             return e.task;
                         }
                     } catch (Exception exception) {

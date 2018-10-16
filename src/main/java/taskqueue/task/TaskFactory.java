@@ -12,6 +12,15 @@ public class TaskFactory {
      * */
     public static AbstractTask newTask(String kind, long id) {
         if ("default".equalsIgnoreCase(kind) || null == kind || "".equalsIgnoreCase(kind.trim())) {
+            TaskId taskId = new TaskId(String.valueOf(id));
+            return new DefaultTaskImp(taskId);
+        } else {
+            return null;
+        }
+    }
+
+    public static AbstractTask newTask(String kind, TaskId id) {
+        if ("default".equalsIgnoreCase(kind) || null == kind || "".equalsIgnoreCase(kind.trim())) {
             return new DefaultTaskImp(id);
         } else {
             return null;
@@ -21,7 +30,8 @@ public class TaskFactory {
     public static AbstractTask newTask(String kind) {
         if ("default".equalsIgnoreCase(kind) || null == kind || "".equalsIgnoreCase(kind.trim())) {
             long id =  (TaskFactory.class.hashCode() ^ (int) System.nanoTime());
-            return new DefaultTaskImp(id);
+            TaskId taskId = new TaskId(String.valueOf(id));
+            return new DefaultTaskImp(taskId);
         } else {
             return null;
         }

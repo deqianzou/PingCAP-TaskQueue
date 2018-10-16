@@ -5,9 +5,9 @@ package taskqueue.task;
  */
 public abstract class AbstractTask implements Runnable {
 
-    private long id;
+    private TaskId id;
 
-    public AbstractTask(long id) {
+    public AbstractTask(TaskId id) {
         this.id = id;
     }
 
@@ -25,7 +25,7 @@ public abstract class AbstractTask implements Runnable {
         this.state = state;
     }
 
-    public long getId() {
+    public TaskId getId() {
         return id;
     }
 
@@ -39,7 +39,7 @@ public abstract class AbstractTask implements Runnable {
             return false;
         if (o.getClass() == this.getClass()) {
             AbstractTask that = (AbstractTask) o;
-            return this.getId() == that.getId();
+            return this.getId().equals(that.getId());
         }
         else
             return false;

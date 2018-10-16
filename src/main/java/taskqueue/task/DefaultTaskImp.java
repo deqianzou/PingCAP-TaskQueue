@@ -5,7 +5,7 @@ package taskqueue.task;
  */
 public class DefaultTaskImp extends AbstractTask {
 
-    public DefaultTaskImp(long id) {
+    public DefaultTaskImp(TaskId id) {
         super(id);
         setState(States.RUNNABLE);
     }
@@ -18,21 +18,7 @@ public class DefaultTaskImp extends AbstractTask {
 
     public boolean equals(AbstractTask task) {
         if (task == null)  return Boolean.FALSE;
-        return this.getId() == task.getId();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if(o == null)
-            return false;
-        if (o.getClass() == this.getClass()) {
-            DefaultTaskImp that = (DefaultTaskImp) o;
-            return this.getId() == that.getId();
-        }
-        else
-            return false;
+        return this.getId().equals(task.getId());
     }
 
 }
